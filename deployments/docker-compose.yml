@@ -1,0 +1,161 @@
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  messenger_net:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: root
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - messenger_net
+
+  db-migrations:
+    image: migrate/migrate
+    container_name: db-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../migrations:/migrations
+    entrypoint: >
+      /bin/sh -c "
+      while ! nc -z postgres 5432; do sleep 2; done;
+      migrate -source file:///migrations -database=postgres://root:root@postgres:5432/root?sslmode=disable up"
+    networks:
+      - messenger_net
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - messenger_net
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - messenger_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  user-service:
+    build: ../user-service
+    container_name: user-service
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      USER_SERVICE_PORT: 8082
+      USER_DB_URL: postgres://root:root@postgres:5432/root?sslmode=disable
+    networks:
+      - messenger_net
+    ports:
+      - "8082:8082"
+
+  auth-service:
+    build: ../auth-service
+    container_name: auth-service
+    restart: always
+    depends_on:
+      user-service:
+        condition: service_started
+    environment:
+      AUTH_SERVICE_PORT: 8081
+      AUTH_JWT_SECRET: super_secret
+      USER_SERVICE_URL: http://user-service:8082
+    networks:
+      - messenger_net
+    ports:
+      - "8081:8081"
+
+  message-service:
+    build: ../message-service
+    container_name: message-service
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      MESSAGE_SERVICE_PORT: 8083
+      MESSAGE_DB_URL: postgres://root:root@postgres:5432/root?sslmode=disable
+      RABBIT_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBIT_EXCHANGE: msg.events
+    networks:
+      - messenger_net
+    ports:
+      - "8083:8083"
+
+  notification-service:
+    build: ../notification-service
+    container_name: notification-service
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBIT_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBIT_EXCHANGE: msg.events
+      RABBIT_QUEUE: msg.notify
+      SMTP_HOST: smtp.yandex.ru
+      SMTP_PORT: "587"
+      SMTP_USERNAME: golmessenger@yandex.ru
+      SMTP_PASSWORD: ccrvnxlvgsrblyil
+      SMTP_FROM: golmessenger@yandex.ru
+    networks:
+      - messenger_net
+
+  storage-service:
+    build: ../storage-service
+    container_name: storage-service
+    restart: always
+    environment:
+      STORAGE_SERVICE_PORT: 8084
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_SSL: "false"
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - messenger_net
+    ports:
+      - "8084:8084"
