@@ -1,0 +1,237 @@
+{
+	"info": {
+		"_postman_id": "778c09eb-0c05-4d83-90fd-e2e93fb3bff1",
+		"name": "notification-service dem",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39392394"
+	},
+	"item": [
+		{
+			"name": "01 – Регистрация пользователей",
+			"item": [
+				{
+					"name": "Регестрируем Алису",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"alice\",\n  \"password\": \"Password123!\",\n  \"role\": \"premium\",\n  \"email\": \"sapporoperl@gmail.com\",\n  \"nickname\": \"Alice\"\n}"
+						},
+						"url": {
+							"raw": "{{base_auth}}/auth/register",
+							"host": [
+								"{{base_auth}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Регистрируем Боба",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"bob\",\n  \"password\": \"Password123!\",\n  \"role\": \"basic\",\n  \"email\": \"godmansoul@yandex.com\",\n  \"nickname\": \"Bob\"\n}"
+						},
+						"url": {
+							"raw": "{{base_auth}}/auth/register",
+							"host": [
+								"{{base_auth}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "02 – Авторизация",
+			"item": [
+				{
+					"name": "Логиним Алису",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"alice\",\n  \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_auth}}/auth/login",
+							"host": [
+								"{{base_auth}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Логиним Боба",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"bob\",\n  \"password\": \"Password123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_auth}}/auth/login",
+							"host": [
+								"{{base_auth}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "03 – Обмен сообщениями",
+			"item": [
+				{
+					"name": "Alice → Bob",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Name",
+								"value": "Alice"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_nickname\": \"Bob\",\n  \"content\": \"Привет, Боб!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_msg}}/messages/create",
+							"host": [
+								"{{base_msg}}"
+							],
+							"path": [
+								"messages",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bob → Alice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Name",
+								"value": "Bob"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"recipient_nickname\": \"Alice\",\n  \"content\": \"Привет, Алиса!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_msg}}/messages/create",
+							"host": [
+								"{{base_msg}}"
+							],
+							"path": [
+								"messages",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Переписка между Alice и Bob",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-User-Name",
+								"value": "Alice"
+							}
+						],
+						"url": {
+							"raw": "{{base_msg}}/messages/conversation/Bob",
+							"host": [
+								"{{base_msg}}"
+							],
+							"path": [
+								"messages",
+								"conversation",
+								"Bob"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_auth",
+			"value": "http://localhost:8081"
+		},
+		{
+			"key": "base_msg",
+			"value": "http://localhost:8083"
+		},
+		{
+			"key": "alice_email",
+			"value": "alice@example.com"
+		},
+		{
+			"key": "bob_email",
+			"value": "bob@example.com"
+		}
+	]
+}
