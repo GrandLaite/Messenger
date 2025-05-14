@@ -24,14 +24,12 @@ func NewStorageHandlers(s *service.StorageService, lg *slog.Logger) *StorageHand
 }
 
 func (h *StorageHandlers) UploadHandler(w http.ResponseWriter, r *http.Request) {
-	// Убедимся, что Content-Type установлен правильно
 	if !strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
 		h.logger.Error("Invalid content type", "content-type", r.Header.Get("Content-Type"))
 		http.Error(w, `{"error":"Content-Type must be multipart/form-data"}`, http.StatusBadRequest)
 		return
 	}
 
-	// Увеличим лимит до 20MB для тестирования
 	if err := r.ParseMultipartForm(20 << 20); err != nil {
 		h.logger.Error("Failed to parse form", "error", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -40,7 +38,6 @@ func (h *StorageHandlers) UploadHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Получаем файл по ключу "file"
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		h.logger.Error("Failed to get file", "error", err)
@@ -51,7 +48,6 @@ func (h *StorageHandlers) UploadHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	defer file.Close()
 
-	// Загружаем файл
 	objectName, err := h.svc.UploadFile(r.Context(), "docs", file, header.Size, header.Header.Get("Content-Type"))
 	if err != nil {
 		h.logger.Error("Upload failed", "error", err)
@@ -61,7 +57,6 @@ func (h *StorageHandlers) UploadHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Возвращаем JSON-ответ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{

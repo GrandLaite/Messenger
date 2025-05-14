@@ -22,12 +22,10 @@ func getenv(key, def string) string {
 }
 
 func main() {
-	// ─── Параметры подключения ────────────────────────────────────────────────
 	rmqURL := getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq:5672/")
 	exchange := getenv("RABBIT_EXCHANGE", "msg.events")
 	queue := getenv("RABBIT_QUEUE", "msg.notify")
 	notifType := getenv("NOTIFICATION_TYPE", "email") // 🆕 Тип нотификатора
-	// ──────────────────────────────────────────────────────────────────────────
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -38,7 +36,6 @@ func main() {
 	}
 	defer br.Close()
 
-	// Инициализация нотификатора в зависимости от типа 🆕
 	var ntfr notifier.Notifier
 	switch notifType {
 	case "email":
@@ -59,7 +56,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Ловим сигналы завершения
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 

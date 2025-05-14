@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// EmailNotifier отправляет письма через SMTP-сервер
 type EmailNotifier struct {
 	host string
 	port string
@@ -18,7 +17,6 @@ type EmailNotifier struct {
 	from string
 }
 
-// NewEmailNotifier создаёт почтовый нотификатор
 func NewEmailNotifier(host, port, user, pass, from string) *EmailNotifier {
 	return &EmailNotifier{
 		host: host,
@@ -29,13 +27,9 @@ func NewEmailNotifier(host, port, user, pass, from string) *EmailNotifier {
 	}
 }
 
-// Send отправляет письмо получателю to с темой subject и телом body
 func (e *EmailNotifier) Send(to, subject, body string) error {
-	// --- корректно кодируем тему, если есть не-ASCII символы -------------
-	// RFC 2047 «encoded-word» (Q-encoding)
 	encodedSubj := mime.QEncoding.Encode("utf-8", subject)
 
-	// собираем MIME-сообщение
 	msg := strings.Join([]string{
 		"From: " + e.from,
 		"To: " + to,
@@ -49,14 +43,12 @@ func (e *EmailNotifier) Send(to, subject, body string) error {
 	addr := net.JoinHostPort(e.host, e.port)
 	auth := smtp.PlainAuth("", e.user, e.pass, e.host)
 
-	// --- устанавливаем соединение и шифрование --------------------------
 	conn, err := smtp.Dial(addr)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	// STARTTLS, если поддерживается
 	if ok, _ := conn.Extension("STARTTLS"); ok {
 		cfg := &tls.Config{ServerName: e.host}
 		if err = conn.StartTLS(cfg); err != nil {
@@ -64,7 +56,6 @@ func (e *EmailNotifier) Send(to, subject, body string) error {
 		}
 	}
 
-	// аутентификация, заголовки SMTP и передача тела письма
 	if err = conn.Auth(auth); err != nil {
 		return err
 	}
