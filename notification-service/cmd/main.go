@@ -25,7 +25,7 @@ func main() {
 	rmqURL := getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq:5672/")
 	exchange := getenv("RABBIT_EXCHANGE", "msg.events")
 	queue := getenv("RABBIT_QUEUE", "msg.notify")
-	notifType := getenv("NOTIFICATION_TYPE", "email") // 🆕 Тип нотификатора
+	notifType := getenv("NOTIFICATION_TYPE", "email")
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -69,7 +69,7 @@ func main() {
 				continue
 			}
 
-			if evt.RecipientEmail == "" { // 🚨 Проверка актуальна для email
+			if evt.RecipientEmail == "" {
 				logger.Warn("empty recipient email",
 					"recipient", evt.Recipient, "msgID", evt.ID)
 				d.Ack(false)
@@ -82,7 +82,7 @@ func main() {
 				evt.Recipient, evt.Sender, evt.Content,
 			)
 
-			if err := ntfr.Send(evt.RecipientEmail, subject, body); err != nil { // 🆕 Используем интерфейс
+			if err := ntfr.Send(evt.RecipientEmail, subject, body); err != nil {
 				logger.Error("notification send failed",
 					"to", evt.RecipientEmail, "err", err)
 				d.Nack(false, true)
