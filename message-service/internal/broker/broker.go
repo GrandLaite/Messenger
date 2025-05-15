@@ -61,7 +61,7 @@ type MessageCreatedEvent struct {
 	ID             int    `json:"id"`
 	Sender         string `json:"sender"`
 	Recipient      string `json:"recipient"`
-	RecipientEmail string `json:"recipient_email"` // 🆕
+	RecipientEmail string `json:"recipient_email"`
 	Content        string `json:"content"`
 	CreatedAt      string `json:"created_at"`
 }
