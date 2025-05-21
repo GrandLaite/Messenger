@@ -12,20 +12,21 @@ import (
 
 	"notification-service/internal/broker"
 	"notification-service/internal/notifier"
+	_ "notification-service/internal/notifier/email" // plug-in «email»
 )
 
-func getenv(key, def string) string {
-	if v := os.Getenv(key); v != "" {
+func getenv(k, d string) string {
+	if v := os.Getenv(k); v != "" {
 		return v
 	}
-	return def
+	return d
 }
 
 func main() {
 	rmqURL := getenv("RABBIT_URL", "amqp://guest:guest@rabbitmq:5672/")
 	exchange := getenv("RABBIT_EXCHANGE", "msg.events")
 	queue := getenv("RABBIT_QUEUE", "msg.notify")
-	notifType := getenv("NOTIFICATION_TYPE", "email")
+	kind := getenv("NOTIFICATION_TYPE", "email") // email|sms|push…
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -36,17 +37,9 @@ func main() {
 	}
 	defer br.Close()
 
-	var ntfr notifier.Notifier
-	switch notifType {
-	case "email":
-		smtpHost := getenv("SMTP_HOST", "smtp.yandex.ru")
-		smtpPort := getenv("SMTP_PORT", "587")
-		smtpUser := getenv("SMTP_USERNAME", "")
-		smtpPass := getenv("SMTP_PASSWORD", "")
-		smtpFrom := getenv("SMTP_FROM", smtpUser)
-		ntfr = notifier.NewEmailNotifier(smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom)
-	default:
-		logger.Error("unsupported notification type", "type", notifType)
+	ntfr, err := notifier.Create(kind)
+	if err != nil {
+		logger.Error("unsupported notifier", "type", kind, "err", err)
 		os.Exit(1)
 	}
 
@@ -83,12 +76,10 @@ func main() {
 			)
 
 			if err := ntfr.Send(evt.RecipientEmail, subject, body); err != nil {
-				logger.Error("notification send failed",
-					"to", evt.RecipientEmail, "err", err)
+				logger.Error("notification send failed", "to", evt.RecipientEmail, "err", err)
 				d.Nack(false, true)
 			} else {
-				logger.Info("notification sent",
-					"to", evt.RecipientEmail, "msgID", evt.ID)
+				logger.Info("notification sent", "to", evt.RecipientEmail, "msgID", evt.ID)
 				d.Ack(false)
 			}
 
