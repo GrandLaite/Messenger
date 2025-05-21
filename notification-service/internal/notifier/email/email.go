@@ -12,12 +12,10 @@ import (
 	"notification-service/internal/notifier"
 )
 
-// EmailNotifier удовлетворяет интерфейсу notifier.Notifier.
 type EmailNotifier struct {
 	host, port, user, pass, from string
 }
 
-// NewFromEnv читает переменные окружения и возвращает готовый объект.
 func NewFromEnv() (notifier.Notifier, error) {
 	get := func(k, d string) string {
 		if v := os.Getenv(k); v != "" {
@@ -35,11 +33,8 @@ func NewFromEnv() (notifier.Notifier, error) {
 }
 
 func init() {
-	// «Плагин» регистрируется под именем "email"
 	notifier.Register("email", NewFromEnv)
 }
-
-// ---------------- реализация интерфейса ----------------
 
 func (e *EmailNotifier) Send(to, subject, body string) error {
 	encSubj := mime.QEncoding.Encode("utf-8", subject)
