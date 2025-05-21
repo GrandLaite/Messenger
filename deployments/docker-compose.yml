@@ -98,6 +98,8 @@ services:
       MESSAGE_DB_URL: postgres://root:root@postgres:5432/root?sslmode=disable
       RABBIT_URL: amqp://guest:guest@rabbitmq:5672/
       RABBIT_EXCHANGE: msg.events
+      CACHE_SERVICE_URL: http://cache-service:8085   #  ← новая переменная
+
     networks:
       - messenger_net
     ports:
@@ -121,3 +123,42 @@ services:
       SMTP_FROM: golmessenger@yandex.ru
     networks:
       - messenger_net
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - messenger_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cache-service:
+    build: ../cache-service
+    container_name: cache-service
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      CACHE_SERVICE_PORT: 8085
+      REDIS_ADDR: redis:6379
+      CACHE_TTL_SEC: 300
+    ports:
+      - "8085:8085"
+    networks:
+      - messenger_net
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8086:8081"          # http://localhost:8086
+    networks: [messenger_net]
+    depends_on:
+      redis:
+        condition: service_started

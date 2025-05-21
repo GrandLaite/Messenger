@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 
@@ -17,18 +18,20 @@ func NewMessageService(r *repository.MessageRepository, b *broker.Broker) *Messa
 	return &MessageService{repo: r, broker: b}
 }
 
+// Create: после записи в БД инвалидируем кэш
 func (s *MessageService) Create(sender, recipient, content string) (repository.Message, error) {
 	msg, err := s.repo.Create(sender, recipient, content)
 	if err != nil {
 		return msg, err
 	}
+	// кэш устарел
+	cacheDelAsync(sender, recipient)
 
 	if s.broker != nil {
 		email, emErr := getRecipientEmail(recipient)
 		if emErr != nil {
 			slog.Default().Warn("user email lookup failed", "err", emErr)
 		}
-
 		_ = s.broker.PublishMessageCreated(broker.MessageCreatedEvent{
 			ID:             msg.ID,
 			Sender:         msg.SenderNickname,
@@ -41,10 +44,12 @@ func (s *MessageService) Create(sender, recipient, content string) (repository.M
 	return msg, nil
 }
 
+// GetByID — без изменений
 func (s *MessageService) GetByID(id int) (repository.Message, error) {
 	return s.repo.GetByID(id)
 }
 
+// Delete: валидируем владельца и инвалидируем кэш
 func (s *MessageService) Delete(id int, requester string) error {
 	msg, err := s.repo.GetByID(id)
 	if err != nil {
@@ -53,13 +58,24 @@ func (s *MessageService) Delete(id int, requester string) error {
 	if msg.SenderNickname != requester {
 		return errors.New("forbidden")
 	}
+	cacheDelAsync(msg.SenderNickname, msg.RecipientNickname)
 	return s.repo.Delete(id)
 }
 
+// GetConversation: сперва пробуем Redis, при промахе — БД + запись в кэш
 func (s *MessageService) GetConversation(u1, u2 string) ([]repository.Message, error) {
-	return s.repo.GetConversation(u1, u2)
+	var cached []repository.Message
+	if tryCacheGet(context.Background(), u1, u2, &cached) {
+		return cached, nil
+	}
+	msgs, err := s.repo.GetConversation(u1, u2)
+	if err == nil && len(msgs) > 0 {
+		cacheSetAsync(u1, u2, msgs)
+	}
+	return msgs, err
 }
 
+// GetDialogs — без изменений
 func (s *MessageService) GetDialogs(nickname string) ([]string, error) {
 	return s.repo.GetDialogs(nickname)
 }
