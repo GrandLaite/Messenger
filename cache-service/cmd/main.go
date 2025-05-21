@@ -25,14 +25,12 @@ func getenv(k, d string) string {
 func atoi(s string) int { i, _ := strconv.Atoi(s); return i }
 
 func main() {
-	// ─ настройки окружения ──────────────────────────
 	port := getenv("CACHE_SERVICE_PORT", "8085")
 	redisAdr := getenv("REDIS_ADDR", "redis:6379")
 	redisPwd := getenv("REDIS_PASSWORD", "")
 	redisDB := atoi(getenv("REDIS_DB", "0"))
 	ttlSec := atoi(getenv("CACHE_TTL_SEC", "300"))
 
-	// ─ инициализация ────────────────────────────────
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	svc := service.New(redisAdr, redisPwd, redisDB, ttlSec)
 	hnd := handlers.New(svc)
@@ -50,7 +48,6 @@ func main() {
 		IdleTimeout:  30 * time.Second,
 	}
 
-	// ─ запуск + graceful shutdown ───────────────────
 	go func() {
 		logger.Info("cache-service started", "port", port)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

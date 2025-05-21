@@ -18,13 +18,11 @@ func NewMessageService(r *repository.MessageRepository, b *broker.Broker) *Messa
 	return &MessageService{repo: r, broker: b}
 }
 
-// Create: после записи в БД инвалидируем кэш
 func (s *MessageService) Create(sender, recipient, content string) (repository.Message, error) {
 	msg, err := s.repo.Create(sender, recipient, content)
 	if err != nil {
 		return msg, err
 	}
-	// кэш устарел
 	cacheDelAsync(sender, recipient)
 
 	if s.broker != nil {
@@ -44,12 +42,10 @@ func (s *MessageService) Create(sender, recipient, content string) (repository.M
 	return msg, nil
 }
 
-// GetByID — без изменений
 func (s *MessageService) GetByID(id int) (repository.Message, error) {
 	return s.repo.GetByID(id)
 }
 
-// Delete: валидируем владельца и инвалидируем кэш
 func (s *MessageService) Delete(id int, requester string) error {
 	msg, err := s.repo.GetByID(id)
 	if err != nil {
@@ -62,7 +58,6 @@ func (s *MessageService) Delete(id int, requester string) error {
 	return s.repo.Delete(id)
 }
 
-// GetConversation: сперва пробуем Redis, при промахе — БД + запись в кэш
 func (s *MessageService) GetConversation(u1, u2 string) ([]repository.Message, error) {
 	var cached []repository.Message
 	if tryCacheGet(context.Background(), u1, u2, &cached) {
@@ -75,7 +70,6 @@ func (s *MessageService) GetConversation(u1, u2 string) ([]repository.Message, e
 	return msgs, err
 }
 
-// GetDialogs — без изменений
 func (s *MessageService) GetDialogs(nickname string) ([]string, error) {
 	return s.repo.GetDialogs(nickname)
 }

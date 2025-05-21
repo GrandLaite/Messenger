@@ -98,7 +98,7 @@ services:
       MESSAGE_DB_URL: postgres://root:root@postgres:5432/root?sslmode=disable
       RABBIT_URL: amqp://guest:guest@rabbitmq:5672/
       RABBIT_EXCHANGE: msg.events
-      CACHE_SERVICE_URL: http://cache-service:8085   #  ← новая переменная
+      CACHE_SERVICE_URL: http://cache-service:8085
 
     networks:
       - messenger_net

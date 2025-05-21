@@ -23,7 +23,6 @@ func respond(w http.ResponseWriter, code int, body any) {
 	}
 }
 
-// POST /cache/conversation/{u1}/{u2}
 func (h *Handlers) SetConv(w http.ResponseWriter, r *http.Request) {
 	var data any
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
@@ -41,7 +40,6 @@ func (h *Handlers) SetConv(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, map[string]string{"status": "cached"})
 }
 
-// GET /cache/conversation/{u1}/{u2}
 func (h *Handlers) GetConv(w http.ResponseWriter, r *http.Request) {
 	u1, u2 := mux.Vars(r)["u1"], mux.Vars(r)["u2"]
 	var out any
@@ -57,7 +55,6 @@ func (h *Handlers) GetConv(w http.ResponseWriter, r *http.Request) {
 	respond(w, http.StatusOK, out)
 }
 
-// DELETE /cache/conversation/{u1}/{u2}
 func (h *Handlers) DelConv(w http.ResponseWriter, r *http.Request) {
 	u1, u2 := mux.Vars(r)["u1"], mux.Vars(r)["u2"]
 	if err := h.srv.DeleteConversation(r.Context(), u1, u2); err != nil {

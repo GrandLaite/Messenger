@@ -25,7 +25,6 @@ func New(addr, pass string, db int, ttlSec int) *CacheService {
 	}
 }
 
-// симметричный ключ "conversation:alice:bob"
 func conversationKey(u1, u2 string) string {
 	if u1 < u2 {
 		return "conversation:" + u1 + ":" + u2
@@ -38,7 +37,7 @@ func (c *CacheService) GetConversation(ctx context.Context, u1, u2 string, dst a
 
 	val, err := c.cli.Get(ctx, key).Bytes()
 	if errors.Is(err, redis.Nil) {
-		return false, nil // нет в кэше
+		return false, nil
 	}
 	if err != nil {
 		return false, err

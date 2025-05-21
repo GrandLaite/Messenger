@@ -23,7 +23,6 @@ func cacheURL(u1, u2 string) string {
 	return cacheBase + "/cache/conversation/" + u1 + "/" + u2
 }
 
-// попытка чтения из Redis; возвращает true, если удалось
 func tryCacheGet(ctx context.Context, u1, u2 string, dst any) bool {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, cacheURL(u1, u2), nil)
 	resp, err := httpCli.Do(req)
@@ -34,7 +33,6 @@ func tryCacheGet(ctx context.Context, u1, u2 string, dst any) bool {
 	return json.NewDecoder(resp.Body).Decode(dst) == nil
 }
 
-// асинхронная запись в кэш
 func cacheSetAsync(u1, u2 string, data any) {
 	go func() {
 		b, _ := json.Marshal(data)
@@ -42,7 +40,6 @@ func cacheSetAsync(u1, u2 string, data any) {
 	}()
 }
 
-// асинхронное удаление кэша
 func cacheDelAsync(u1, u2 string) {
 	go func() {
 		req, _ := http.NewRequest(http.MethodDelete, cacheURL(u1, u2), nil)
