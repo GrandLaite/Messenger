@@ -63,3 +63,7 @@ func (h *Handlers) DelConv(w http.ResponseWriter, r *http.Request) {
 	}
 	respond(w, http.StatusOK, nil)
 }
+
+func (h *Handlers) Health(w http.ResponseWriter, _ *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -25,23 +26,31 @@ func New(addr, pass string, db int, ttlSec int) *CacheService {
 	}
 }
 
+// conversationKey формирует единый ключ; регистр никнеймов игнорируется.
 func conversationKey(u1, u2 string) string {
+	u1 = strings.ToLower(u1)
+	u2 = strings.ToLower(u2)
 	if u1 < u2 {
 		return "conversation:" + u1 + ":" + u2
 	}
 	return "conversation:" + u2 + ":" + u1
 }
 
+// GetConversation продлевает TTL, если запись найдена (sliding TTL).
 func (c *CacheService) GetConversation(ctx context.Context, u1, u2 string, dst any) (bool, error) {
 	key := conversationKey(u1, u2)
 
 	val, err := c.cli.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
+	switch {
+	case errors.Is(err, redis.Nil):
 		return false, nil
-	}
-	if err != nil {
+	case err != nil:
 		return false, err
 	}
+
+	// Обновляем TTL без влияния на бизнес-логику, ошибку игнорируем.
+	_ = c.cli.Expire(ctx, key, c.ttl).Err()
+
 	return true, json.Unmarshal(val, dst)
 }
 

@@ -39,6 +39,7 @@ func main() {
 	r.HandleFunc("/cache/conversation/{u1}/{u2}", hnd.SetConv).Methods(http.MethodPost)
 	r.HandleFunc("/cache/conversation/{u1}/{u2}", hnd.GetConv).Methods(http.MethodGet)
 	r.HandleFunc("/cache/conversation/{u1}/{u2}", hnd.DelConv).Methods(http.MethodDelete)
+	r.HandleFunc("/healthz", hnd.Health).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Addr:         ":" + port,
