@@ -26,7 +26,6 @@ func New(addr, pass string, db int, ttlSec int) *CacheService {
 	}
 }
 
-// conversationKey формирует единый ключ; регистр никнеймов игнорируется.
 func conversationKey(u1, u2 string) string {
 	u1 = strings.ToLower(u1)
 	u2 = strings.ToLower(u2)
@@ -36,7 +35,6 @@ func conversationKey(u1, u2 string) string {
 	return "conversation:" + u2 + ":" + u1
 }
 
-// GetConversation продлевает TTL, если запись найдена (sliding TTL).
 func (c *CacheService) GetConversation(ctx context.Context, u1, u2 string, dst any) (bool, error) {
 	key := conversationKey(u1, u2)
 
@@ -48,7 +46,6 @@ func (c *CacheService) GetConversation(ctx context.Context, u1, u2 string, dst a
 		return false, err
 	}
 
-	// Обновляем TTL без влияния на бизнес-логику, ошибку игнорируем.
 	_ = c.cli.Expire(ctx, key, c.ttl).Err()
 
 	return true, json.Unmarshal(val, dst)
